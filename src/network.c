@@ -30,6 +30,7 @@
 #include "upsample_layer.h"
 #include "shortcut_layer.h"
 #include "parser.h"
+#include "attentionrefine_layer.h"
 #include "data.h"
 
 load_args get_base_args(network *net)
@@ -168,6 +169,8 @@ char *get_layer_string(LAYER_TYPE a)
             return "normalization";
         case BATCHNORM:
             return "batchnorm";
+        case ATTENTIONREFINE:
+            return "attentionrefine";
         default:
             break;
     }
@@ -203,6 +206,7 @@ void forward_network(network *netp)
         }
         l.forward(l, net);
         net.input = l.output;
+        //printf("%s:%f\n",get_layer_string(l.type),net.input[0]);
         if(l.truth) {
             net.truth = l.output;
         }
@@ -283,6 +287,7 @@ void backward_network(network *netp)
         }
         net.index = i;
         l.backward(l, net);
+        //printf("%d:%f\n",i-1,net.delta[0]);
     }
 }
 
@@ -395,7 +400,10 @@ int resize_network(network *net, int w, int h)
             resize_normalization_layer(&l, w, h);
         }else if(l.type == COST){
             resize_cost_layer(&l, inputs);
-        }else{
+        }else if(l.type == ATTENTIONREFINE){
+            resize_attentionrefine_layer(&l,w,h);
+        }
+        else{
             error("Cannot resize this type of layer");
         }
         if(l.workspace_size > workspace_size) workspace_size = l.workspace_size;

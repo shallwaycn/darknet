@@ -35,6 +35,7 @@
 #include "shortcut_layer.h"
 #include "softmax_layer.h"
 #include "lstm_layer.h"
+#include "attentionrefine_layer.h"
 #include "utils.h"
 
 typedef struct{
@@ -83,6 +84,7 @@ LAYER_TYPE string_to_layer_type(char * type)
             || strcmp(type, "[softmax]")==0) return SOFTMAX;
     if (strcmp(type, "[route]")==0) return ROUTE;
     if (strcmp(type, "[upsample]")==0) return UPSAMPLE;
+    if (strcmp(type, "[attentionrefine]")==0) return ATTENTIONREFINE;
     return BLANK;
 }
 
@@ -555,6 +557,25 @@ layer parse_shortcut(list *options, size_params params, network *net)
     return s;
 }
 
+layer parse_attentionrefine(list *options, size_params params, network *net)
+{
+    char *l = option_find(options, "from");
+    int index = atoi(l);
+    if(index < 0) index = params.index + index;
+
+    int batch = params.batch;
+    layer from = net->layers[index];
+
+    layer s = make_attentionrefine_layer(batch, index, params.w, params.h, params.c, from.out_w, from.out_h, from.out_c);
+
+    // char *activation_s = option_find_str(options, "activation", "linear");
+    // ACTIVATION activation = get_activation(activation_s);
+    // s.activation = activation;
+    // s.alpha = option_find_float_quiet(options, "alpha", 1);
+    // s.beta = option_find_float_quiet(options, "beta", 1);
+    return s;
+}
+
 
 layer parse_l2norm(list *options, size_params params)
 {
@@ -826,6 +847,9 @@ network *parse_network_cfg(char *filename)
             l = parse_upsample(options, params, net);
         }else if(lt == SHORTCUT){
             l = parse_shortcut(options, params, net);
+        }
+        else if (lt == ATTENTIONREFINE){
+            l = parse_attentionrefine(options, params, net);
         }else if(lt == DROPOUT){
             l = parse_dropout(options, params);
             l.output = net->layers[count-1].output;

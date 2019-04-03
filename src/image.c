@@ -1073,6 +1073,19 @@ image grayscale_image(image im)
     return gray;
 }
 
+image getimage_r(image im)
+{
+    assert(im.c == 3);
+    int i, j, k;
+    image r = make_image(im.w, im.h, 1);
+    for(j = 0; j < im.h; ++j){
+        for(i = 0; i < im.w; ++i){
+            r.data[i+im.w*j] = get_pixel(im, i, j, 0);
+        }
+    }
+    return r;
+}
+
 image threshold_image(image im, float thresh)
 {
     int i;

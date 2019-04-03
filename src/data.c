@@ -22,22 +22,22 @@ list *get_paths(char *filename)
     return lines;
 }
 
-/*
-char **get_random_paths_indexes(char **paths, int n, int m, int *indexes)
+
+char **get_random_paths_labels(char **paths, char **labels, int n, int m, char **random_labels)
 {
     char **random_paths = calloc(n, sizeof(char*));
     int i;
     pthread_mutex_lock(&mutex);
     for(i = 0; i < n; ++i){
         int index = rand()%m;
-        indexes[i] = index;
         random_paths[i] = paths[index];
-        if(i == 0) printf("%s\n", paths[index]);
+        random_labels[i] = labels[index];
+        //if(i == 0) printf("%s\n", paths[index]);
     }
     pthread_mutex_unlock(&mutex);
     return random_paths;
 }
-*/
+
 
 char **get_random_paths(char **paths, int n, int m)
 {
@@ -734,6 +734,61 @@ image get_segmentation_image2(char *path, int w, int h, int classes)
     return mask;
 }
 
+data load_data_humanseg(int n, char **paths, char **labels, int m, int w, int h, int min, int max, float angle, float aspect, float hue, float saturation, float exposure)
+{
+    char **random_labels = calloc(n, sizeof(char*));
+    char **random_paths = get_random_paths_labels(paths, labels, n, m, random_labels);
+
+    int i;
+    data d = {0};
+    d.shallow = 0;
+
+    d.X.rows = n;
+    d.X.vals = calloc(d.X.rows, sizeof(float*));
+    d.X.cols = h*w*3;
+
+    d.y.rows = n;
+    d.y.cols = h*w*1;
+    d.y.vals = calloc(d.X.rows, sizeof(float*));
+
+    for(i = 0; i < n; ++i){
+        image orig = load_image_color(random_paths[i], 0, 0);
+        augment_args a = random_augment_args(orig, angle, aspect, min, max, w, h);
+        image sized = rotate_crop_image(orig, a.rad, a.scale, a.w, a.h, a.dx, a.dy, a.aspect);
+
+        //printf("%d %d\n", min, max);
+        //printf("%f\n", sized.data[0]);
+        //printf("%f, %f, %d, %d, %f, %f, %f\n", a.rad, a.scale, a.w, a.h,a.dx, a.dy, a.aspect);
+        int flip = rand()%2;
+        if(flip) flip_image(sized);
+        random_distort_image(sized, hue, saturation, exposure);
+        d.X.vals[i] = sized.data;
+
+        image label = load_image_color(random_labels[i], 0, 0);
+        image label_r = getimage_r(label);
+        image sized_m = rotate_crop_image(label_r, a.rad, a.scale, a.w, a.h, a.dx, a.dy, a.aspect);
+
+
+        if(flip) flip_image(sized_m);
+        d.y.vals[i] = sized_m.data;
+
+        free_image(orig);
+        free_image(label);
+        free_image(label_r);
+
+        /*
+           image rgb = mask_to_rgb(sized_m, classes);
+           show_image(rgb, "part");
+           show_image(sized, "orig");
+           cvWaitKey(0);
+           free_image(rgb);
+         */
+    }
+    free(random_paths);
+    free(random_labels);
+    return d;
+}
+
 data load_data_seg(int n, char **paths, int m, int w, int h, int classes, int min, int max, float angle, float aspect, float hue, float saturation, float exposure, int div)
 {
     char **random_paths = get_random_paths(paths, n, m);
@@ -1127,6 +1182,9 @@ void *load_thread(void *ptr)
         *(a.resized) = letterbox_image(*(a.im), a.w, a.h);
     } else if (a.type == TAG_DATA){
         *a.d = load_data_tag(a.paths, a.n, a.m, a.classes, a.min, a.max, a.size, a.angle, a.aspect, a.hue, a.saturation, a.exposure);
+    }
+    else if (a.type == HUMANSEG_DATA){
+        *a.d = load_data_humanseg(a.n, a.paths, a.labels, a.m, a.w, a.h, a.min, a.max, a.angle, a.aspect, a.hue, a.saturation, a.exposure);
     }
     free(ptr);
     return 0;
