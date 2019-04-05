@@ -878,6 +878,8 @@ augment_args random_augment_args(image im, float angle, float aspect, int low, i
     int min = (im.h < im.w*aspect) ? im.h : im.w*aspect;
     float scale = (float)r / min;
 
+    //printf("%f,%f,%d,%d\n",aspect,scale,r,min);
+
     float rad = rand_uniform(-angle, angle) * TWO_PI / 360.;
 
     float dx = (im.w*scale/aspect - w) / 2.;

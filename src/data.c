@@ -772,6 +772,9 @@ data load_data_humanseg(int n, char **paths, char **labels, int m, int w, int h,
         if(flip) flip_image(sized_m);
         d.y.vals[i] = sized_m.data;
 
+        // show_image(sized, "sized", 1);
+        // show_image(sized_m, "sized_m", 1);
+
         free_image(orig);
         free_image(label);
         free_image(label_r);

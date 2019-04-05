@@ -103,11 +103,13 @@ void backward_attentionrefine_layer(const layer l, network net)
             }
             //int in_index = 0 + l.w*(0 + l.h*(k + l.c*b));
             //printf("%d:%f\n",in_index,l.delta[in_index]);
-            net.delta[out_index] = total / l.h*l.w;
+            net.delta[out_index] += total / l.h*l.w;
         }
     }
+
+    shortcut_cpu(l.batch, l.out_w, l.out_h, l.out_c, l.delta, l.w, l.h, l.c, 1, 1, net.layers[l.index].delta);
     //multiply_cpu_backward(l.batch, l.out_w, l.out_h, l.out_c, l.delta, l.w, l.h, l.c,net.delta);
-    //axpy_cpu(l.inputs*l.batch, 1, l.delta, 1, net.delta, 1);
+    //axpy_cpu(l.outputs*l.batch, 1, l.delta, 1, net.layers[l.index].delta, 1);
     //multiply_cpu_backward(l.batch, l.out_w, l.out_h, l.out_c, l.delta, l.w, l.h, l.c, net.layers[l.index].delta);
 }
 

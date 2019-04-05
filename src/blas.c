@@ -349,3 +349,49 @@ void upsample_cpu(float *in, int w, int h, int c, int batch, int stride, int for
 }
 
 
+void upsample_bilinear_cpu(float *in, int w, int h, int c, int batch, int w2, int h2, int forward, float *out)
+{
+    float x_ratio = (float)(w) / w2;
+	float y_ratio = (float)(h) / h2;
+
+
+
+    int i, j, k, b;
+    for(b = 0; b < batch; ++b){
+        for(k = 0; k < c; ++k){
+            for(j = 0; j < h2; ++j){
+                for(i = 0; i < w2; ++i){
+
+                    int x = (int)(x_ratio * i);
+                    int y = (int)(y_ratio * j);
+
+                    float x_diff = (x_ratio * i) - x;
+                    float y_diff = (y_ratio * j) - y;
+
+                    int indexA = b*w*h*c + k*w*h + (y)*w + x;
+                    int indexB = x + 1 >= w ? indexA : b*w*h*c + k*w*h + (y)*w + x+1;
+                    int indexC = y + 1 >= h ? indexA : b*w*h*c + k*w*h + (y+1)*w + x;
+                    int indexD = x + 1 >= w || y + 1 >= h ? indexA : b*w*h*c + k*w*h + (y+1)*w + x+1;
+                    
+                    float A = in[indexA];
+                    float B = in[indexB];
+                    float C = in[indexC];
+                    float D = in[indexD];
+
+                    float ret = A*(1 - x_diff)*(1 - y_diff) + B * (x_diff)*(1 - y_diff) + C * (y_diff)*(1 - x_diff) + D * (x_diff*y_diff);
+
+                    int out_index = b*w2*h2*c + k*w2*h2 + j*w2 + i;
+
+                    if(forward){
+                        out[out_index] = ret;
+                    }
+                    else{
+                        out[out_index] += ret;
+                    }
+                }
+            }
+        }
+    }
+}
+
+
