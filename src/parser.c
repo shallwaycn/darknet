@@ -37,6 +37,7 @@
 #include "lstm_layer.h"
 #include "attentionrefine_layer.h"
 #include "utils.h"
+#include "multpool_layer.h"
 
 typedef struct{
     char *type;
@@ -85,6 +86,7 @@ LAYER_TYPE string_to_layer_type(char * type)
     if (strcmp(type, "[route]")==0) return ROUTE;
     if (strcmp(type, "[upsample]")==0) return UPSAMPLE;
     if (strcmp(type, "[attentionrefine]")==0) return ATTENTIONREFINE;
+    if (strcmp(type, "[multpool]")==0) return MULTPOOL; 
     return BLANK;
 }
 
@@ -499,6 +501,24 @@ maxpool_layer parse_maxpool(list *options, size_params params)
     return layer;
 }
 
+multpool_layer parse_multpool(list *options, size_params params)
+{
+    int stride = option_find_int(options, "stride",1);
+    int size = option_find_int(options, "size",stride);
+    int padding = option_find_int_quiet(options, "padding", size-1);
+    int extra = option_find_int_quiet(options, "extra",1);
+
+    int batch,h,w,c;
+    h = params.h;
+    w = params.w;
+    c = params.c;
+    batch=params.batch;
+    if(!(h && w && c)) error("Layer before multpool layer must output image.");
+
+    multpool_layer layer = make_multpool_layer(batch,h,w,c,size,stride,padding,extra);
+    return layer;
+}
+
 avgpool_layer parse_avgpool(list *options, size_params params)
 {
     int batch,w,h,c;
@@ -858,6 +878,9 @@ network *parse_network_cfg(char *filename)
             l.output_gpu = net->layers[count-1].output_gpu;
             l.delta_gpu = net->layers[count-1].delta_gpu;
 #endif
+        }
+        else if (lt == MULTPOOL){
+            l = parse_multpool(options, params);
         }else{
             fprintf(stderr, "Type not recognized: %s\n", s->type);
         }

@@ -88,7 +88,8 @@ typedef enum {
     LOGXENT,
     L2NORM,
     BLANK,
-    ATTENTIONREFINE
+    ATTENTIONREFINE,
+    MULTPOOL,
 } LAYER_TYPE;
 
 typedef enum{

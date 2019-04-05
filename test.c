@@ -99,8 +99,11 @@ void test_predict(){
 }
 
 void test_train(){
-    const char* cfg = "cfg/humanseg3.cfg";
+    
+    //const char* weights = "resnext50.weights";
     const char* weights = "darknet.weights";
+    const char* cfg = "cfg/humanseg6.cfg";
+    
     char *train_images = "data/humanseg/train.list";
     char *train_labels = "data/humanseg/label.list";
     char *backup_directory = "data/humanseg/backup/";
@@ -110,7 +113,7 @@ void test_train(){
     srand(time(0));
     float avg_loss = -1;
     network *net = parse_network_cfg(cfg);
-    load_weights_upto(net, weights,0,6);
+    load_weights_upto(net, weights,0,2);
 
     *net->seen = 0;
 
@@ -165,7 +168,7 @@ void test_train(){
 
         time=clock();
         float loss = train_network_sgd(net, train,net->subdivisions);
-        sleep(1);
+        //sleep(1);
         if (avg_loss < 0) avg_loss = loss;
         avg_loss = avg_loss*.9 + loss*.1;
 
@@ -200,6 +203,9 @@ void test_train(){
                 sprintf(buff, "%s/%d/%s", val_directory,i,basecfg(vals[j]));
 
                 show_image(pre, buff, 1);
+
+                free_image(im);
+                //free_image(pre);
             }
 
             set_batch_network(net,batch);

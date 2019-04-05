@@ -31,6 +31,7 @@
 #include "shortcut_layer.h"
 #include "parser.h"
 #include "attentionrefine_layer.h"
+#include "multpool_layer.h"
 #include "data.h"
 
 load_args get_base_args(network *net)
@@ -171,6 +172,8 @@ char *get_layer_string(LAYER_TYPE a)
             return "batchnorm";
         case ATTENTIONREFINE:
             return "attentionrefine";
+        case MULTPOOL:
+            return "multpool";
         default:
             break;
     }
@@ -402,6 +405,9 @@ int resize_network(network *net, int w, int h)
             resize_cost_layer(&l, inputs);
         }else if(l.type == ATTENTIONREFINE){
             resize_attentionrefine_layer(&l,w,h);
+        }
+        else if (l.type == MULTPOOL){
+            resize_multpool_layer(&l,w,h);
         }
         else{
             error("Cannot resize this type of layer");
